@@ -1,7 +1,7 @@
 # Sarcasm Classifier.
 
 ## About:
-This program runs a two-stage binary classifier *(sarcasm | not sarcasm)*. The first stage utilizes a custom Contrast approach
+This program runs a two-stage binary classifier (sarcasm | not sarcasm). The first stage utilizes a custom Contrast approach
 to classifying sarcasm utilizing the assumption that sarcasm can be recognized by looking for a Positive Verb Phrase or Positive
 Predicate Expression closely followed by a Negative Situational Phrase. The second stage is simply a SVM with a RBF kernel. The final
 classification result is decided upon either stage tagging the provided sentence as sarcastic; if neither stage does so then the result
