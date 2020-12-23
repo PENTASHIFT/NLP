@@ -12,14 +12,16 @@ from sklearn.metrics import confusion_matrix, classification_report
 
 class Classify:
     def __init__(self, data):
+        # Train/Test SVM Stage.
         self.X = data['tweets'].apply(lambda x: np.str_(x))
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, data['labels'], test_size=0.20)
 
         self.svc, self.vectorizer = self._train_svm()
         self._test_svm()
 
+        # Train/Test Contrast Stage.
         self.sarcasm_train = shuffle(data.copy(deep=True))
-        index = len(self.sarcasm_train) - floor(len(self.sarcasm_train) * 0.20)
+        index = len(self.sarcasm_train) - floor(len(self.sarcasm_train) * 0.20)     # Train and Test index.
         self.sarcasm_train, self.test = self.sarcasm_train[:index], self.sarcasm_train[index:].values.tolist()
         self.sarcasm_train = self.sarcasm_train[self.sarcasm_train['labels'] == 'sarcasm']
         self.sarcasm_train = self.sarcasm_train.values.tolist()
@@ -29,6 +31,7 @@ class Classify:
 
         self._train_contrast(verb="love")
 
+        # Filter out sparse data.
         self.positive_verb_phrases = {k: v for k, v in self.positive_verb_phrases.items() if v > 3}
         self.negative_situation_phrases = {k: v for k, v in self.negative_situation_phrases.items() if v > 3}
         self.positive_pred_expressions = {k: v for k, v in self.positive_pred_expressions.items() if v > 3}
@@ -74,7 +77,17 @@ class Classify:
         return seed
 
     def _train_contrast(self, verb=None, pred=None, situation=None):
-        ''' Replace recursion with something more appropriate. '''
+        ''' Replace recursion with something more appropriate.
+
+            Starts with seed "love" and hops back and forth between
+            searching for Positive Verb Phrases/Positive Predicate Phrases
+            to Negative Situation Phrases given the results that appeared in 
+            the previous iteration as the new seed. 
+            
+            Ex: "love" -> "I love being alone." -> "being alone"
+                "being alone" -> "It's great being alone!" -> "great"
+                "great" -> "..." -> "..." '''
+
         count = 0
         seed = verb if verb != None else situation
         if seed == None: seed = pred
@@ -117,6 +130,9 @@ class Classify:
                 return
 
     def _predict_contrast(self, tokens):
+        ''' Finds the distance between Positive sentiments and Negative situations.
+            If distance is less than or equal to 5 then the given message is 
+            believed to be sarcastic. '''
         positive_index = np.array([token for token in range(len(tokens))
                             if tokens[token] in self.positive_verb_phrases or tokens[token] in self.positive_pred_expressions])
         negative_situation = np.array([token for token in range(len(tokens)) if tokens[token] in self.negative_situation_phrases])
@@ -179,8 +195,10 @@ class Classify:
         return self.svc.predict(self.vectorizer.transform(df[0]))
 
 if __name__ == '__main__':
-    sys.setrecursionlimit(10**6)
+    sys.setrecursionlimit(10**6)    # Due to expensive recursion in _train_contrast function.
     header_list = ['tweet_id', 'tweets']
+    
+    # Reads and Combines both data files into one DataFrame.
     sarcasm_data = pd.read_csv("data/sarcastic_data.csv", delimiter='…',
                                engine='python', names=header_list, header=None)
     sarcasm_data['labels'] = ['sarcasm'] * len(sarcasm_data)
@@ -188,4 +206,5 @@ if __name__ == '__main__':
                                engine='python', names=header_list, header=None)
     normal_data['labels'] = ['normal'] * len(normal_data)
     data = pd.concat([sarcasm_data, normal_data], ignore_index=True, sort=False, names=header_list)
+
     c = Classify(data)
