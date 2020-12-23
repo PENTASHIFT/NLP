@@ -16,4 +16,4 @@ Both csv files used has two columns each. One with the Tweet ID from the above l
 ## Todo:
 - Clean up the Contrast classifier functions.
 - Rework the **expensive** tail recursion in the *_train_contrast* function.
-- Add some comments.
+- ~~Add some comments~~
